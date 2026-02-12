@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mural Eletrônico (Admin + TV Player)</title>
+  <style>
+    :root{
+      /* Paleta (Cooperja) */
+      --cooperja-green:#004646;
+      --cooperja-gold:#EAB500;
+
+      /* Tema */
+      --bg:#061415;
+      --card:rgba(8, 26, 27, .70);
+      --card-strong:rgba(8, 26, 27, .88);
+      --muted:rgba(232, 240, 251, .70);
+      --text:#f3fbfb;
+      --accent:var(--cooperja-gold);
+      --accent-2:rgba(234,181,0,.22);
+
+      --danger:#ff4d4d;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --border:rgba(255,255,255,.12);
+      --shadow: 0 18px 70px rgba(0,0,0,.45);
+      --shadow-soft: 0 10px 30px rgba(0,0,0,.30);
+      --radius:20px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      font-family:var(--sans);
+      background:
+        radial-gradient(1200px 800px at 15% 10%, rgba(234,181,0,.18), transparent 55%),
+        radial-gradient(900px 700px at 85% 25%, rgba(0,70,70,.55), transparent 55%),
+        radial-gradient(700px 600px at 70% 85%, rgba(34,197,94,.10), transparent 60%),
+        var(--bg);
+      color:var(--text);
+    }
+    a{color:inherit}
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(12px);
+      background: rgba(6, 20, 21, .72);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .topbar .inner{
+      max-width:1200px; margin:0 auto; padding:14px 16px;
+      display:flex; align-items:center; gap:12px; justify-content:space-between;
+    }
+    .brand{display:flex; align-items:center; gap:10px;}
+    .logo{
+      width:36px;height:36px;border-radius:12px;
+      background: linear-gradient(135deg, rgba(0,70,70,1), rgba(234,181,0,.95));
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 12px 36px rgba(0,0,0,.35);
+    }
+    .brand h1{font-size:14px; margin:0; letter-spacing:.2px}
+    .brand p{margin:0; font-size:12px; color:var(--muted)}
+
+    .tabs{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .tab{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      transition: .15s ease;
+      box-shadow: 0 8px 18px rgba(0,0,0,.15);
+    }
+    .tab:disabled{opacity:.45; cursor:not-allowed; box-shadow:none}
+    .tab:hover:not(:disabled){transform: translateY(-1px)}
+    .tab[aria-selected="true"]{
+      border-color: rgba(234,181,0,.65);
+      background: rgba(234,181,0,.14);
+    }
+
+    .wrap{max-width:1200px; margin:0 auto; padding:16px}
+
+    /*
+     * A grade do painel de administração deve empilhar os cartões verticalmente.
+     * Isso evita que o card de cadastro e o card de listagem fiquem lado a lado
+     * e cria dois quadros claros (um em cima do outro) conforme solicitado.
+     */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    /* Mantemos o @media para compatibilidade futura, mas ele não precisa alterar as colunas */
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr;}
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:16px 16px 12px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+    }
+    .card .hd h2{margin:0; font-size:14px; letter-spacing:.2px}
+    .card .hd .sub{margin:2px 0 0; font-size:12px; color:var(--muted)}
+    .card .bd{padding:14px}
+
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    @media (max-width: 580px){
+      .row{grid-template-columns:1fr}
+    }
+
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    input,select,textarea{
+      width:100%;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding:11px 12px;
+      border-radius: 14px;
+      outline:none;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.10);
+    }
+    input:focus,select:focus,textarea:focus{
+      border-color: rgba(234,181,0,.65);
+      box-shadow: 0 0 0 3px rgba(234,181,0,.12);
+    }
+    textarea{min-height:92px; resize:vertical}
+    input::placeholder, textarea::placeholder{color: rgba(138,160,182,.6)}
+
+    .btns{display:flex; gap:8px; flex-wrap:wrap}
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-size:12px;
+      transition:.15s ease;
+    }
+    .btn.primary{
+      border-color: rgba(234,181,0,.75);
+      background: rgba(234,181,0,.16);
+    }
+    .btn.danger{
+      border-color: rgba(255,77,77,.60);
+      background: rgba(255,77,77,.12);
+    }
+    .btn.ok{
+      border-color: rgba(34,197,94,.60);
+      background: rgba(34,197,94,.12);
+    }
+    .btn:active{transform: translateY(1px)}
+
+    .pill{
+      display:inline-flex; align-items:center; gap:7px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.04);
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      color: rgba(243,251,251,.78);
+    }
+    .dot{width:7px;height:7px;border-radius:999px;background:var(--muted)}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warn)}
+    .dot.danger{background:var(--danger)}
+
+    table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden}
+    th,td{padding:10px 10px; font-size:12px; border-bottom:1px solid var(--border); vertical-align:top}
+    th{color:rgba(243,251,251,.70); text-align:left; font-weight:700; background: rgba(255,255,255,.03); position:sticky; top:0; z-index:2}
+    tr:hover td{background: rgba(255,255,255,.02)}
+    td small{color:var(--muted)}
+
+    .mono{font-family:var(--mono)}
+    .help{font-size:12px; color:var(--muted); line-height:1.4}
+    .kpi{display:flex; gap:10px; flex-wrap:wrap}
+    .kpi .box{flex:1; min-width:160px; padding:12px; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.03)}
+    .kpi .box b{display:block; font-size:18px}
+    .kpi .box span{font-size:12px; color:var(--muted)}
+
+    /* PLAYER */
+    .player{
+      position:fixed; inset:0; background:#000; color:#fff;
+      display:none;
+      /* garante que o player fique acima da barra superior */
+      z-index:999;
+    }
+    .player.show{display:block}
+    .player .stage{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+    }
+    .player .stage img, .player .stage video, .player .stage iframe{
+      width:100%; height:100%; object-fit:cover; border:0;
+    }
+    .player .stage .notice{
+      width:100%; height:100%;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:5vw;
+      background: radial-gradient(900px 600px at 10% 20%, rgba(59,130,246,.25), transparent 55%),
+                  radial-gradient(700px 600px at 85% 30%, rgba(34,197,94,.18), transparent 55%),
+                  #070a0f;
+    }
+    .notice .title{font-size:min(5vw,64px); margin:0 0 14px; text-align:center; letter-spacing:.2px}
+    .notice .text{font-size:min(2.6vw,28px); margin:0; text-align:center; opacity:.92; max-width: 1200px; line-height:1.25}
+    .player .hud{
+      position:absolute; left:16px; right:16px; bottom:16px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      font-family:var(--sans);
+      color:rgba(255,255,255,.85);
+      pointer-events:none;
+    }
+    .hud .tag{pointer-events:none; font-size:14px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.16); padding:8px 12px; border-radius:999px; backdrop-filter: blur(10px)}
+    .hud .right{display:flex; gap:8px; align-items:center}
+    .progress{width:220px; height:10px; background:rgba(255,255,255,.14); border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.16)}
+    .progress > div{height:100%; width:0%; background:rgba(59,130,246,.85)}
+
+    .hidden{display:none !important}
+
+    /* Botão de fechar o player no modo TV */
+    #player .close-player{
+      position:absolute;
+      top:16px;
+      right:16px;
+      z-index:100;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,77,77,.12);
+      color: var(--text);
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      pointer-events:auto;
+      transition:.15s ease;
+    }
+    #player .close-player:hover{
+      background: rgba(255,77,77,.20);
+    }
+    #player .close-player:active{
+      transform: translateY(1px);
+    }
+    /* Esconde o botão quando o player estiver oculto */
+    #player[aria-hidden="true"] .close-player{ display:none; }
+    #player[aria-hidden="false"] .close-player{ display:block; }
+
+    .toast{
+      position:fixed; left:16px; bottom:16px; z-index:9999;
+      background: rgba(18,26,36,.92);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      display:none;
+      max-width:min(520px, calc(100% - 32px));
+    }
+    .toast.show{display:block}
+
+    .divider{height:1px; background:var(--border); margin:12px 0}
+
+    .mini{font-size:12px; color:var(--muted)}
+    .code{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(232,240,251,.9);
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 14px;
+      overflow:auto;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Mural Eletrônico</h1>
+          <p>Admin + TV Player (HTML offline com JSON)</p>
+        </div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Modos">
+        <button class="tab" id="tab-login" role="tab" aria-selected="true">Login</button>
+        <button class="tab" id="tab-admin" role="tab" aria-selected="false" disabled>Admin</button>
+        <button class="tab" id="tab-player" role="tab" aria-selected="false" disabled>TV Player</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <!-- LOGIN -->
+    <section id="view-login" class="card">
+      <div class="hd">
+        <div>
+          <h2>Login</h2>
+          <div class="sub">Escolha o perfil. Para TV, use o perfil “Viewer”.</div>
+        </div>
+        <span class="pill"><span class="dot warn"></span><span id="storage-pill">Armazenamento local</span></span>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label>Usuário</label>
+            <input id="login-user" placeholder="admin / viewer" autocomplete="username" />
+          </div>
+          <div>
+            <label>Senha</label>
+            <input id="login-pass" placeholder="admin123 / viewer123" type="password" autocomplete="current-password" />
+          </div>
+        </div>
+        <div style="margin-top:10px" class="btns">
+          <button class="btn primary" id="btn-login">Entrar</button>
+          <button class="btn" id="btn-demo">Preencher demo</button>
+          <button class="btn danger" id="btn-reset">Resetar dados</button>
+        </div>
+        <div class="divider"></div>
+        <div class="help">
+          <b>Como usar na TV:</b> faça login como <span class="mono">viewer</span> e abra o modo <b>TV Player</b>. Depois pressione <span class="mono">F11</span> (tela cheia).
+          <br /><br />
+          <b>Credenciais padrão (troque no código se quiser):</b>
+          <ul>
+            <li><span class="mono">admin / admin123</span></li>
+            <li><span class="mono">viewer / viewer123</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="view-admin" class="hidden">
+      <div class="grid">
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2>Painel Admin</h2>
+              <div class="sub">Cadastre itens (imagem/vídeo/link/aviso), defina duração, ordem e período.</div>
+            </div>
+            <span class="pill"><span class="dot ok"></span><span id="whoami-admin">admin</span></span>
+          </div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Título</label>
+                <input id="f-title" placeholder="Ex: Campanha de Segurança" />
+              </div>
+              <div>
+                <label>Tipo</label>
+                <select id="f-type">
+                  <option value="notice">Aviso (texto)</option>
+                  <option value="image">Imagem</option>
+                  <option value="video">Vídeo</option>
+                  <option value="url">Link / Página</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>Ordem (menor aparece primeiro)</label>
+                <input id="f-order" type="number" min="1" step="1" placeholder="1" />
+              </div>
+              <div>
+                <label>Duração (segundos)</label>
+                <input id="f-duration" type="number" min="3" step="1" placeholder="10" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>Data início (opcional)</label>
+                <input id="f-start" type="datetime-local" />
+              </div>
+              <div>
+                <label>Data fim (opcional)</label>
+                <input id="f-end" type="datetime-local" />
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <label>Conteúdo</label>
+              <div id="box-notice">
+                <textarea id="f-text" placeholder="Escreva o aviso. Ex: Reunião às 15h no auditório."></textarea>
+              </div>
+              <div id="box-media" class="hidden">
+                <input id="f-url" placeholder="Cole o link do arquivo (https://...) ou arraste um arquivo abaixo" />
+                <div style="margin-top:8px" class="row">
+                  <div>
+                    <label>Upload (opcional, vira Data URL e salva local)</label>
+                    <input id="f-file" type="file" accept="image/*,video/*" />
+                    <div class="mini">Dica: para TV offline, use upload de imagem; vídeo pode ficar pesado no armazenamento local.</div>
+                  </div>
+                  <div>
+                    <label>Ativo</label>
+                    <select id="f-active">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px" class="btns">
+              <button class="btn primary" id="btn-save">Salvar item</button>
+              <button class="btn" id="btn-clear">Limpar</button>
+              <button class="btn ok" id="btn-export">Exportar JSON</button>
+              <label class="btn" style="cursor:pointer">
+                Importar JSON
+                <input id="btn-import" type="file" accept="application/json" class="hidden" />
+              </label>
+            </div>
+
+            <div class="divider"></div>
+            <div class="help">
+              <b>Como rodar na TV sem internet:</b> exporte o JSON e importe no computador/dispositivo da TV.
+              <br/>
+              <b>Como usar com SharePoint:</b> publique este HTML em uma biblioteca e troque o “storage local” por leitura da lista via API (ou use a exportação JSON como ponte).
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2>Itens cadastrados</h2>
+              <div class="sub">Gerencie, reordene e ative/desative.</div>
+            </div>
+            <span class="pill"><span class="dot warn"></span><span id="count-pill">0 itens</span></span>
+          </div>
+          <div class="bd">
+            <div class="kpi">
+              <div class="box"><b id="kpi-active">0</b><span>Ativos agora</span></div>
+              <div class="box"><b id="kpi-scheduled">0</b><span>Agendados</span></div>
+              <div class="box"><b id="kpi-total">0</b><span>Total</span></div>
+            </div>
+            <div class="divider"></div>
+            <!--
+              Removido overflow e altura fixa para que a lista de itens se expanda de acordo com o conteúdo.
+              A rolagem passa a ser da página inteira, eliminando barras internas.
+            -->
+            <div style="border:1px solid var(--border); border-radius: 16px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ordem</th>
+                    <th>Título</th>
+                    <th>Tipo</th>
+                    <th>Ativo</th>
+                    <th>Janela</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="items-tbody"></tbody>
+              </table>
+            </div>
+            <div class="divider"></div>
+            <div class="help">
+              Dica: pressione <span class="mono">Ctrl+L</span> no player para mostrar/ocultar a HUD (barra inferior).
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAYER VIEW (preview no admin / viewer) -->
+    <section id="view-player" class="card hidden">
+      <div class="hd">
+        <div>
+          <h2>TV Player</h2>
+          <div class="sub">Pré-visualização. Clique em “Iniciar Player” para abrir em tela cheia.</div>
+        </div>
+        <span class="pill"><span class="dot ok"></span><span id="whoami-player">viewer</span></span>
+      </div>
+      <div class="bd">
+        <div class="btns">
+          <button class="btn primary" id="btn-start-player">Iniciar Player (tela cheia)</button>
+          <button class="btn" id="btn-stop-player">Parar</button>
+          <button class="btn" id="btn-open-player">Abrir Player em nova aba</button>
+        </div>
+        <div class="divider"></div>
+        <div class="help">
+          <b>Operação na TV:</b> abra este arquivo HTML, faça login como <span class="mono">viewer</span>, vá em <b>TV Player</b>, clique em <b>Iniciar Player</b>, e aperte <span class="mono">F11</span>.
+          <br/><br/>
+          <b>Atalhos:</b>
+          <ul>
+            <li><span class="mono">Esc</span>: sai do modo tela cheia do navegador</li>
+            <li><span class="mono">Ctrl+L</span>: alterna HUD (barra inferior) no player</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHAREPOINT NOTES -->
+    <section id="view-sharepoint" class="card hidden">
+      <div class="hd">
+        <div>
+          <h2>Como ligar isso ao SharePoint (guia rápido)</h2>
+          <div class="sub">Estratégia: lista no SharePoint → player lê JSON (ou API).</div>
+        </div>
+        <span class="pill"><span class="dot warn"></span><span>Guia</span></span>
+      </div>
+      <div class="bd">
+        <div class="help">
+          <b>Opção mais simples (sem programar API):</b> Admin exporta o JSON e salva no SharePoint como <span class="mono">mural.json</span>. A TV abre o player que busca esse arquivo.
+          <br/><br/>
+          Para isso, você vai:
+          <ol>
+            <li>Criar uma biblioteca (ex: <span class="mono">Mural_Player</span>)</li>
+            <li>Enviar este HTML para a biblioteca</li>
+            <li>Exportar JSON e enviar como <span class="mono">mural.json</span></li>
+            <li>No código, definir <span class="mono">REMOTE_JSON_URL</span> com o link direto do <span class="mono">mural.json</span></li>
+          </ol>
+          <div class="divider"></div>
+          <b>Opção profissional:</b> criar WebPart SPFx e ler a Lista do SharePoint diretamente com permissões. Esse HTML vira o protótipo do player.
+        </div>
+
+        <div class="divider"></div>
+        <div class="mini">Trecho para configurar URL de JSON remoto:</div>
+        <div class="code">// 1) Suba o arquivo mural.json no SharePoint e pegue o link direto
+// 2) Cole aqui:
+const REMOTE_JSON_URL = ""; // ex: https://suaempresa.sharepoint.com/sites/mural/Mural_Player/mural.json
+
+// Se REMOTE_JSON_URL estiver preenchido, o player tentará usar esse JSON primeiro.</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- PLAYER FULLSCREEN OVERLAY -->
+  <div id="player" class="player" aria-hidden="true">
+    <div class="stage" id="stage"></div>
+    <!-- Botão para fechar o player. Será exibido somente quando o player estiver ativo -->
+    <button id="btn-close-player" class="close-player" aria-label="Fechar player">Sair</button>
+    <div class="hud" id="hud">
+      <div class="tag" id="hud-left">Mural</div>
+      <div class="right">
+        <div class="tag" id="hud-right">--:--</div>
+        <div class="progress" aria-label="Progresso"><div id="prog"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  /**********************
+   * CONFIGURAÇÕES
+   **********************/
+  // Credenciais simples (MVP). Em produção: autenticação real.
+  const USERS = {
+    admin: { pass: "admin123", role: "admin" },
+    viewer: { pass: "viewer123", role: "viewer" }
+  };
+
+  // Se você subir um mural.json no SharePoint, coloque o link aqui.
+  // Se vazio, usa localStorage.
+  const REMOTE_JSON_URL = "";
+
+  const STORAGE_KEY = "mural_items_v1";
+
+  /**********************
+   * HELPERS
+   **********************/
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg){
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"), 2400);
+  }
+
+  function nowISO(){
+    const d = new Date();
+    // sem timezone no datetime-local
+    const pad=(n)=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function parseDTLocal(v){
+    // v no formato YYYY-MM-DDTHH:mm
+    if(!v) return null;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function isInWindow(item, at=new Date()){
+    const s = item.start ? new Date(item.start) : null;
+    const e = item.end ? new Date(item.end) : null;
+    if(s && at < s) return false;
+    if(e && at > e) return false;
+    return true;
+  }
+
+  function safeNum(v, fallback){
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function uuid(){
+    return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+  }
+
+  async function fileToDataURL(file){
+    return new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.onerror = reject;
+      fr.readAsDataURL(file);
+    });
+  }
+
+  /**********************
+   * DATA (localStorage + opcional remoto)
+   **********************/
+  function loadLocal(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return seedDemo();
+    try{
+      const data = JSON.parse(raw);
+      if(!Array.isArray(data)) return seedDemo();
+      return data;
+    }catch{
+      return seedDemo();
+    }
+  }
+
+  function saveLocal(items){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  function seedDemo(){
+    const base = new Date();
+    const start = new Date(base.getTime() - 60*60*1000);
+    const end = new Date(base.getTime() + 7*24*60*60*1000);
+    const items = [
+      {
+        id: uuid(),
+        title: "Bem-vindos!",
+        type: "notice",
+        text: "Mural corporativo em funcionamento.\n\nSegurança, avisos e indicadores — tudo num só lugar.",
+        url: "",
+        durationSec: 10,
+        order: 1,
+        active: true,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: uuid(),
+        title: "Campanha: Zero Acidentes",
+        type: "url",
+        text: "",
+        url: "https://www.example.com",
+        durationSec: 12,
+        order: 2,
+        active: false,
+        start: null,
+        end: null,
+        createdAt: new Date().toISOString()
+      }
+    ];
+    saveLocal(items);
+    return items;
+  }
+
+  async function loadItems(){
+    // Se houver JSON remoto, tenta buscar e usar (fallback no local)
+    if(REMOTE_JSON_URL && REMOTE_JSON_URL.trim()){
+      try{
+        const res = await fetch(REMOTE_JSON_URL, { cache: "no-store" });
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if(Array.isArray(data)){
+          $("storage-pill").textContent = "JSON remoto";
+          return data;
+        }
+      }catch(e){
+        // fallback
+        $("storage-pill").textContent = "Local (fallback)";
+      }
+    }
+    return loadLocal();
+  }
+
+  /**********************
+   * AUTH + NAV
+   **********************/
+  const session = { user: null, role: null };
+
+  function setTab(tab){
+    const tabs = ["login","admin","player","sharepoint"];
+    for(const t of tabs){
+      const tabBtn = $("tab-"+t);
+      if(tabBtn){
+        tabBtn.setAttribute("aria-selected", String(t===tab));
+      }
+      const view = $("view-"+t);
+      if(view){
+        view.classList.toggle("hidden", t!==tab);
+      }
+    }
+  }
+
+  function enableTabs(){
+    $("tab-admin").disabled = session.role !== "admin";
+    $("tab-player").disabled = !session.role;
+  }
+
+  /**********************
+   * ADMIN UI
+   **********************/
+  let ITEMS = [];
+
+  function refreshKPIs(){
+    const now = new Date();
+    const total = ITEMS.length;
+    const activeNow = ITEMS.filter(it => it.active && isInWindow(it, now)).length;
+    const scheduled = ITEMS.filter(it => (it.start || it.end)).length;
+
+    $("kpi-total").textContent = total;
+    $("kpi-active").textContent = activeNow;
+    $("kpi-scheduled").textContent = scheduled;
+    $("count-pill").textContent = `${total} itens`;
+  }
+
+  function fmtDate(v){
+    if(!v) return "—";
+    const d = new Date(v);
+    if(isNaN(d.getTime())) return "—";
+    return d.toLocaleString("pt-BR");
+  }
+
+  function typeLabel(t){
+    return ({notice:"Aviso", image:"Imagem", video:"Vídeo", url:"Link"})[t] || t;
+  }
+
+  function renderTable(){
+    const tb = $("items-tbody");
+    tb.innerHTML = "";
+
+    const sorted = [...ITEMS].sort((a,b)=> (a.order??999)-(b.order??999));
+    for(const it of sorted){
+      const tr = document.createElement("tr");
+      const windowTxt = (it.start||it.end) ? `${fmtDate(it.start)} → ${fmtDate(it.end)}` : "—";
+      tr.innerHTML = `
+        <td class="mono">${it.order ?? ""}</td>
+        <td><b>${escapeHtml(it.title||"(sem título)")}</b><br/><small>${escapeHtml((it.type==="notice"? (it.text||"") : (it.url||"" )).slice(0,60))}${((it.type==="notice"? (it.text||"") : (it.url||"" )).length>60)?"…":""}</small></td>
+        <td>${typeLabel(it.type)}</td>
+        <td>${it.active?"<span class='pill'><span class='dot ok'></span>Sim</span>":"<span class='pill'><span class='dot danger'></span>Não</span>"}</td>
+        <td><small>${escapeHtml(windowTxt)}</small></td>
+        <td>
+          <div class="btns">
+            <button class="btn" data-act="edit" data-id="${it.id}">Editar</button>
+            <button class="btn" data-act="toggle" data-id="${it.id}">${it.active?"Desativar":"Ativar"}</button>
+            <button class="btn danger" data-act="del" data-id="${it.id}">Excluir</button>
+          </div>
+        </td>
+      `;
+      tb.appendChild(tr);
+    }
+
+    tb.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.addEventListener("click", async (e)=>{
+        const id = btn.getAttribute("data-id");
+        const act = btn.getAttribute("data-act");
+        if(act === "del"){
+          if(confirm("Excluir este item?")){
+            ITEMS = ITEMS.filter(x=>x.id!==id);
+            saveLocal(ITEMS);
+            renderTable();
+            refreshKPIs();
+            toast("Item excluído");
+          }
+        }
+        if(act === "toggle"){
+          const it = ITEMS.find(x=>x.id===id);
+          if(!it) return;
+          it.active = !it.active;
+          saveLocal(ITEMS);
+          renderTable();
+          refreshKPIs();
+          toast(it.active?"Ativado":"Desativado");
+        }
+        if(act === "edit"){
+          const it = ITEMS.find(x=>x.id===id);
+          if(!it) return;
+          fillForm(it);
+          toast("Editando item");
+        }
+      });
+    });
+  }
+
+  function clearForm(){
+    $("f-title").value = "";
+    $("f-type").value = "notice";
+    $("f-order").value = "";
+    $("f-duration").value = "10";
+    $("f-start").value = "";
+    $("f-end").value = "";
+    $("f-text").value = "";
+    $("f-url").value = "";
+    $("f-file").value = "";
+    $("f-active").value = "true";
+    $("btn-save").setAttribute("data-edit-id", "");
+    updateFormVisibility();
+  }
+
+  function fillForm(it){
+    $("f-title").value = it.title || "";
+    $("f-type").value = it.type || "notice";
+    $("f-order").value = it.order ?? "";
+    $("f-duration").value = it.durationSec ?? 10;
+
+    const s = it.start ? new Date(it.start) : null;
+    const e = it.end ? new Date(it.end) : null;
+    $("f-start").value = s && !isNaN(s.getTime()) ? toDTLocal(s) : "";
+    $("f-end").value = e && !isNaN(e.getTime()) ? toDTLocal(e) : "";
+
+    $("f-text").value = it.text || "";
+    $("f-url").value = it.url || "";
+    $("f-active").value = String(!!it.active);
+
+    $("btn-save").setAttribute("data-edit-id", it.id);
+    updateFormVisibility();
+  }
+
+  function toDTLocal(date){
+    const pad=(n)=>String(n).padStart(2,"0");
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function updateFormVisibility(){
+    const t = $("f-type").value;
+    const isNotice = t === "notice";
+    $("box-notice").classList.toggle("hidden", !isNotice);
+    $("box-media").classList.toggle("hidden", isNotice);
+  }
+
+  function escapeHtml(s){
+    return String(s||"")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
+  }
+
+  async function upsertItem(){
+    const editId = $("btn-save").getAttribute("data-edit-id") || "";
+
+    const title = $("f-title").value.trim();
+    const type = $("f-type").value;
+    const order = safeNum($("f-order").value, 999);
+    const durationSec = Math.max(3, safeNum($("f-duration").value, 10));
+    const start = parseDTLocal($("f-start").value);
+    const end = parseDTLocal($("f-end").value);
+
+    const active = (type === "notice") ? true : ($("f-active").value === "true");
+
+    let text = "";
+    let url = "";
+
+    if(type === "notice"){
+      text = $("f-text").value.trim();
+      if(!title && !text) return toast("Preencha título ou texto do aviso");
+    } else {
+      url = $("f-url").value.trim();
+      if(!url){
+        // pode vir do upload
+        const file = $("f-file").files?.[0];
+        if(file){
+          toast("Convertendo arquivo…");
+          url = await fileToDataURL(file);
+        }
+      }
+      if(!url) return toast("Informe uma URL ou faça upload");
+    }
+
+    const payload = {
+      id: editId || uuid(),
+      title: title || (type === "notice" ? "Aviso" : "Conteúdo"),
+      type,
+      text,
+      url,
+      durationSec,
+      order,
+      active,
+      start: start ? start.toISOString() : null,
+      end: end ? end.toISOString() : null,
+      createdAt: editId ? (ITEMS.find(x=>x.id===editId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Valida janela
+    if(payload.start && payload.end){
+      const ds = new Date(payload.start);
+      const de = new Date(payload.end);
+      if(ds > de) return toast("Data início não pode ser maior que data fim");
+    }
+
+    const idx = ITEMS.findIndex(x=>x.id===payload.id);
+    if(idx >= 0){
+      ITEMS[idx] = payload;
+      toast("Item atualizado");
+    } else {
+      ITEMS.push(payload);
+      toast("Item criado");
+    }
+
+    saveLocal(ITEMS);
+    clearForm();
+    renderTable();
+    refreshKPIs();
+  }
+
+  function exportJSON(){
+    const data = JSON.stringify(ITEMS, null, 2);
+    const blob = new Blob([data], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "mural.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("JSON exportado");
+  }
+
+  async function importJSON(file){
+    try{
+      const txt = await file.text();
+      const data = JSON.parse(txt);
+      if(!Array.isArray(data)) throw new Error("JSON precisa ser um array");
+      ITEMS = data;
+      saveLocal(ITEMS);
+      renderTable();
+      refreshKPIs();
+      toast("JSON importado");
+    }catch(e){
+      toast("Erro ao importar: " + e.message);
+    }
+  }
+
+  /**********************
+   * PLAYER
+   **********************/
+  let playerTimer = null;
+  let progressTimer = null;
+  let playerIdx = 0;
+  let playerList = [];
+  let hudVisible = true;
+
+  function buildPlaylist(){
+    const now = new Date();
+    return ITEMS
+      .filter(it => it.active && isInWindow(it, now))
+      .sort((a,b)=> (a.order??999)-(b.order??999));
+  }
+
+  function setHUD(title, remainingSec, totalSec){
+    $("hud-left").textContent = title || "Mural";
+    $("hud-right").textContent = new Date().toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"});
+    const pct = totalSec > 0 ? (1 - (remainingSec/totalSec)) * 100 : 0;
+    $("prog").style.width = `${Math.max(0, Math.min(100, pct))}%`;
+  }
+
+  function clearStage(){
+    const stage = $("stage");
+    stage.innerHTML = "";
+  }
+
+  function renderItem(it){
+    clearStage();
+    const stage = $("stage");
+
+    if(it.type === "notice"){
+      const wrap = document.createElement("div");
+      wrap.className = "notice";
+      wrap.innerHTML = `
+        <h1 class="title">${escapeHtml(it.title||"Aviso")}</h1>
+        <p class="text">${escapeHtml(it.text||"").replaceAll("\n","<br/>")}</p>
+      `;
+      stage.appendChild(wrap);
+      return;
+    }
+
+    if(it.type === "image"){
+      const img = document.createElement("img");
+      img.src = it.url;
+      img.alt = it.title || "Imagem";
+      stage.appendChild(img);
+      return;
+    }
+
+    if(it.type === "video"){
+      const v = document.createElement("video");
+      v.src = it.url;
+      v.autoplay = true;
+      v.muted = true;
+      v.loop = true;
+      v.playsInline = true;
+      v.controls = false;
+      stage.appendChild(v);
+      return;
+    }
+
+    // url
+    const iframe = document.createElement("iframe");
+    iframe.src = it.url;
+    iframe.loading = "eager";
+    stage.appendChild(iframe);
+  }
+
+  function stopPlayer(){
+    $("player").classList.remove("show");
+    $("player").setAttribute("aria-hidden","true");
+    clearStage();
+    if(playerTimer) clearTimeout(playerTimer);
+    if(progressTimer) clearInterval(progressTimer);
+    playerTimer = null;
+    progressTimer = null;
+  }
+
+  function startPlayer(){
+    playerList = buildPlaylist();
+    playerIdx = 0;
+
+    if(playerList.length === 0){
+      toast("Nenhum item ativo agora. Ative itens no Admin.");
+      return;
+    }
+
+    $("player").classList.add("show");
+    $("player").setAttribute("aria-hidden","false");
+
+    playNext();
+  }
+
+  function playNext(){
+    if(playerList.length === 0) return;
+
+    const it = playerList[playerIdx % playerList.length];
+    playerIdx++;
+
+    renderItem(it);
+
+    const total = Math.max(3, safeNum(it.durationSec, 10));
+    let remaining = total;
+
+    // progress
+    if(progressTimer) clearInterval(progressTimer);
+    setHUD(it.title, remaining, total);
+    progressTimer = setInterval(()=>{
+      remaining = Math.max(0, remaining - 0.25);
+      setHUD(it.title, remaining, total);
+    }, 250);
+
+    if(playerTimer) clearTimeout(playerTimer);
+    playerTimer = setTimeout(()=>{
+      // rebuild playlist each cycle to respect schedule changes
+      playerList = buildPlaylist();
+      if(playerList.length === 0){
+        stopPlayer();
+        toast("Playlist vazia. Nenhum item ativo no momento.");
+        return;
+      }
+      playNext();
+    }, total * 1000);
+  }
+
+  /**********************
+   * EVENTS
+   **********************/
+  function bind(){
+    // Tabs
+    $("tab-login").addEventListener("click", ()=>setTab("login"));
+    $("tab-admin").addEventListener("click", ()=>setTab("admin"));
+    $("tab-player").addEventListener("click", ()=>setTab("player"));
+
+    // Login
+    $("btn-login").addEventListener("click", ()=>{
+      const u = $("login-user").value.trim().toLowerCase();
+      const p = $("login-pass").value;
+      const rec = USERS[u];
+      if(!rec || rec.pass !== p){
+        toast("Usuário ou senha inválidos");
+        return;
+      }
+      session.user = u;
+      session.role = rec.role;
+      enableTabs();
+      if(session.role === "admin"){
+        $("whoami-admin").textContent = u;
+        setTab("admin");
+      } else {
+        $("whoami-player").textContent = u;
+        setTab("player");
+      }
+      toast("Logado como " + u);
+    });
+
+    $("btn-demo").addEventListener("click", ()=>{
+      $("login-user").value = "admin";
+      $("login-pass").value = "admin123";
+    });
+
+    $("btn-reset").addEventListener("click", ()=>{
+      if(confirm("Resetar e voltar para dados demo?")){
+        localStorage.removeItem(STORAGE_KEY);
+        ITEMS = loadLocal();
+        renderTable();
+        refreshKPIs();
+        toast("Resetado");
+      }
+    });
+
+    // Admin form
+    $("f-type").addEventListener("change", updateFormVisibility);
+
+    $("btn-save").addEventListener("click", async ()=>{
+      await upsertItem();
+    });
+    $("btn-clear").addEventListener("click", clearForm);
+
+    $("btn-export").addEventListener("click", exportJSON);
+
+    $("btn-import").addEventListener("change", async (e)=>{
+      const file = e.target.files?.[0];
+      if(file) await importJSON(file);
+      e.target.value = "";
+    });
+
+    // Player controls
+    $("btn-start-player").addEventListener("click", async ()=>{
+      // tenta fullscreen
+      startPlayer();
+      try{
+        await $("player").requestFullscreen();
+      }catch{}
+    });
+    $("btn-stop-player").addEventListener("click", stopPlayer);
+
+    // Botão de fechar dentro do player (overlay)
+    $("btn-close-player").addEventListener("click", () => {
+      // encerra a reprodução e oculta o player
+      stopPlayer();
+      // tenta sair do modo fullscreen, se estiver ativo
+      if (document.fullscreenElement) {
+        try {
+          document.exitFullscreen();
+        } catch (e) {
+          /* no-op */
+        }
+      }
+    });
+
+    $("btn-open-player").addEventListener("click", ()=>{
+      // abre nova aba já no modo player
+      const url = new URL(window.location.href);
+      url.searchParams.set("mode","player");
+      window.open(url.toString(), "_blank");
+    });
+
+    // HUD toggle
+    document.addEventListener("keydown", (e)=>{
+      if(e.ctrlKey && e.key.toLowerCase() === "l"){
+        hudVisible = !hudVisible;
+        $("hud").style.display = hudVisible ? "flex" : "none";
+      }
+      if(e.key === "Escape"){
+        // ESC only exits browser fullscreen; keep player overlay on.
+      }
+    });
+  }
+
+  async function init(){
+    bind();
+
+    // Load items
+    ITEMS = await loadItems();
+
+    // UI prep
+    clearForm();
+    renderTable();
+    refreshKPIs();
+
+    // detect localStorage
+    try{
+      localStorage.setItem("_t","1");
+      localStorage.removeItem("_t");
+      $("storage-pill").textContent = REMOTE_JSON_URL ? "JSON remoto (ou local)" : "Local";
+    }catch{
+      $("storage-pill").textContent = "Sem storage";
+    }
+
+    // mode param
+    const mode = new URLSearchParams(window.location.search).get("mode");
+    if(mode === "player"){
+      // auto-login viewer for convenience (TV kiosk)
+      session.user = "viewer";
+      session.role = "viewer";
+      enableTabs();
+      $("whoami-player").textContent = "viewer";
+      setTab("player");
+      startPlayer();
+      try{ await $("player").requestFullscreen(); }catch{}
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
